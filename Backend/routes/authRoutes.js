@@ -3,6 +3,7 @@ const express = require("express");
 const {
   register,
   login,
+  googleLogin,
   getMe,
   testEmail,
 } = require("../controllers/authController");
@@ -26,6 +27,12 @@ router.post(
 router.post(
   "/login",
   login
+);
+
+// Google Login
+router.post(
+  "/google",
+  googleLogin
 );
 
 // Current logged-in user

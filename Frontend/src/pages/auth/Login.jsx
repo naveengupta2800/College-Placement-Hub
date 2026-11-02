@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -7,13 +8,15 @@ import {
   LockKeyhole,
   Mail,
   ArrowRight,
+  ShieldCheck,
 } from "lucide-react";
 
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../../context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -56,12 +59,11 @@ const Login = () => {
   };
 
   // =====================================
-  // LOGIN
+  // EMAIL PASSWORD LOGIN
   // =====================================
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     setError("");
 
     if (!formData.email || !formData.password) {
@@ -80,19 +82,54 @@ const Login = () => {
       if (response.success) {
         redirectUser(response.user.role);
       } else {
-        setError(
-          response.message || "Login failed."
-        );
+        setError(response.message || "Login failed.");
+      }
+    } catch (error) {
+      setError(error.message || "Invalid email or password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =====================================
+  // GOOGLE LOGIN
+  // =====================================
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      setError("");
+
+      if (!credentialResponse.credential) {
+        throw new Error("Google credential not received.");
+      }
+
+      setLoading(true);
+
+      const response = await googleLogin(
+        credentialResponse.credential
+      );
+
+      if (response.success && response.user) {
+        redirectUser(response.user.role);
+      } else {
+        setError(response.message || "Google login failed.");
       }
     } catch (error) {
       setError(
-        error.message ||
-          "Invalid email or password."
+        error.message || "Google authentication failed."
       );
     } finally {
       setLoading(false);
     }
   };
+
+  const handleGoogleError = () => {
+    setError("Google authentication failed. Please try again.");
+  };
+
+  // =====================================
+  // UI
+  // =====================================
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -102,23 +139,28 @@ const Login = () => {
             LEFT BRANDING SECTION
         ================================= */}
 
-        <div className="relative hidden w-[48%] overflow-hidden bg-blue-700 lg:flex">
-          
-          {/* Background decoration */}
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-blue-500/40" />
+        <div className="relative hidden w-[48%] overflow-hidden bg-gradient-to-br from-blue-700 via-blue-700 to-indigo-800 lg:flex">
 
-          <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-blue-800/50" />
+          {/* Background Decoration */}
+
+          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-blue-400/20 blur-sm" />
+
+          <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-indigo-900/30" />
+
+          <div className="absolute right-20 top-1/2 h-40 w-40 rounded-full border border-white/10" />
 
           <div className="relative z-10 flex w-full flex-col justify-between p-12">
-            
+
             {/* Logo */}
+
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-blue-700 shadow-lg">
-                <BriefcaseBusiness size={22} />
+
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-700 shadow-lg">
+                <BriefcaseBusiness size={23} />
               </div>
 
               <div>
-                <h1 className="text-lg font-bold text-white">
+                <h1 className="text-xl font-bold tracking-tight text-white">
                   PlacementHub
                 </h1>
 
@@ -126,65 +168,81 @@ const Login = () => {
                   College Placement Management
                 </p>
               </div>
+
             </div>
 
             {/* Main Content */}
-            <div className="max-w-lg">
-              <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-blue-200">
-                Campus Placement Platform
-              </p>
 
-              <h2 className="text-5xl font-bold leading-tight text-white">
+            <div className="max-w-lg">
+
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-md">
+
+                <span className="h-2 w-2 rounded-full bg-green-400" />
+
+                <span className="text-xs font-medium text-blue-50">
+                  Campus Placement Platform
+                </span>
+
+              </div>
+
+              <h2 className="text-5xl font-bold leading-tight tracking-tight text-white">
                 Build your career
-                <span className="block text-blue-200">
+
+                <span className="mt-1 block text-blue-200">
                   with the right opportunity.
                 </span>
               </h2>
 
-              <p className="mt-6 max-w-md text-base leading-7 text-blue-100">
+              <p className="mt-6 max-w-md text-base leading-8 text-blue-100">
                 Discover placement opportunities,
                 manage applications and stay updated
                 throughout your placement journey.
               </p>
 
               {/* Feature Cards */}
+
               <div className="mt-10 grid grid-cols-3 gap-4">
-                <div className="rounded-xl border border-white/10 bg-white/10 p-4 backdrop-blur-sm">
+
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-md">
                   <p className="text-2xl font-bold text-white">
                     100+
                   </p>
 
-                  <p className="mt-1 text-xs text-blue-100">
+                  <p className="mt-2 text-xs text-blue-100">
                     Opportunities
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/10 p-4 backdrop-blur-sm">
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-md">
                   <p className="text-2xl font-bold text-white">
                     50+
                   </p>
 
-                  <p className="mt-1 text-xs text-blue-100">
+                  <p className="mt-2 text-xs text-blue-100">
                     Companies
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/10 p-4 backdrop-blur-sm">
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur-md">
                   <p className="text-2xl font-bold text-white">
                     24/7
                   </p>
 
-                  <p className="mt-1 text-xs text-blue-100">
+                  <p className="mt-2 text-xs text-blue-100">
                     Updates
                   </p>
                 </div>
+
               </div>
+
             </div>
 
             {/* Footer */}
+
             <p className="text-xs text-blue-200">
-              © 2026 College Placement Cell
+              © 2026 College Placement Cell. All rights reserved.
             </p>
+
           </div>
         </div>
 
@@ -192,13 +250,16 @@ const Login = () => {
             RIGHT LOGIN SECTION
         ================================= */}
 
-        <div className="flex flex-1 items-center justify-center px-8 py-12">
+        <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
+
           <div className="w-full max-w-md">
 
             {/* Mobile Logo */}
+
             <div className="mb-10 flex items-center gap-3 lg:hidden">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white">
-                <BriefcaseBusiness size={20} />
+
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md">
+                <BriefcaseBusiness size={21} />
               </div>
 
               <div>
@@ -207,51 +268,67 @@ const Login = () => {
                 </h1>
 
                 <p className="text-xs text-gray-500">
-                  College Placement
+                  College Placement Management
                 </p>
               </div>
+
             </div>
 
             {/* Heading */}
+
             <div className="mb-8">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-                Welcome back
+
+              <p className="mb-3 text-sm font-semibold text-blue-600">
+                WELCOME BACK
+              </p>
+
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                Sign in to your account
               </h2>
 
-              <p className="mt-2 text-sm text-gray-500">
-                Sign in to continue to your placement
-                dashboard.
+              <p className="mt-3 text-sm leading-6 text-gray-500">
+                Enter your credentials to access your placement dashboard.
               </p>
+
             </div>
 
-            {/* Error */}
+            {/* Error Message */}
+
             {error && (
-              <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+              <div className="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+
+                <div className="mt-0.5 h-2 w-2 rounded-full bg-red-500" />
+
                 <p className="text-sm font-medium text-red-600">
                   {error}
                 </p>
+
               </div>
             )}
 
-            {/* Form */}
+            {/* EMAIL PASSWORD FORM */}
+
             <form
               onSubmit={handleSubmit}
               className="space-y-5"
             >
 
               {/* Email */}
+
               <div>
+
                 <label
                   htmlFor="email"
-                  className="mb-2 block text-sm font-medium text-gray-700"
+                  className="mb-2 block text-sm font-semibold text-gray-700"
                 >
                   Email Address
                 </label>
 
-                <div className="relative">
+                <div className="group relative">
+
                   <Mail
-                    size={18}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={19}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 transition group-focus-within:text-blue-600"
                   />
 
                   <input
@@ -261,146 +338,97 @@ const Login = () => {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="you@example.com"
-                    className="
-                      h-12
-                      w-full
-                      rounded-lg
-                      border
-                      border-gray-300
-                      bg-white
-                      pl-11
-                      pr-4
-                      text-sm
-                      text-gray-900
-                      outline-none
-                      transition
-                      placeholder:text-gray-400
-                      focus:border-blue-500
-                      focus:ring-4
-                      focus:ring-blue-50
-                    "
+                    required
+                    className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-12 pr-4 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 hover:border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
                   />
+
                 </div>
+
               </div>
 
               {/* Password */}
+
               <div>
+
                 <div className="mb-2 flex items-center justify-between">
+
                   <label
                     htmlFor="password"
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-semibold text-gray-700"
                   >
                     Password
                   </label>
 
                   <button
                     type="button"
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                    className="text-xs font-semibold text-blue-600 transition hover:text-blue-800"
                   >
                     Forgot password?
                   </button>
+
                 </div>
 
-                <div className="relative">
+                <div className="group relative">
+
                   <LockKeyhole
-                    size={18}
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+                    size={19}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 transition group-focus-within:text-blue-600"
                   />
 
                   <input
                     id="password"
                     name="password"
-                    type={
-                      showPassword
-                        ? "text"
-                        : "password"
-                    }
+                    type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={handleChange}
                     placeholder="Enter your password"
-                    className="
-                      h-12
-                      w-full
-                      rounded-lg
-                      border
-                      border-gray-300
-                      bg-white
-                      pl-11
-                      pr-12
-                      text-sm
-                      text-gray-900
-                      outline-none
-                      transition
-                      placeholder:text-gray-400
-                      focus:border-blue-500
-                      focus:ring-4
-                      focus:ring-blue-50
-                    "
+                    required
+                    className="h-12 w-full rounded-xl border border-gray-200 bg-white pl-12 pr-12 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 hover:border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
                   />
 
                   <button
                     type="button"
-                    onClick={() =>
-                      setShowPassword(
-                        (prev) => !prev
-                      )
-                    }
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-700"
                   >
                     {showPassword ? (
-                      <EyeOff size={18} />
+                      <EyeOff size={19} />
                     ) : (
-                      <Eye size={18} />
+                      <Eye size={19} />
                     )}
                   </button>
+
                 </div>
+
               </div>
 
-              {/* Remember */}
+              {/* Remember Me */}
+
               <div className="flex items-center gap-2">
+
                 <input
                   id="remember"
                   type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 cursor-pointer rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
 
                 <label
                   htmlFor="remember"
-                  className="text-sm text-gray-600"
+                  className="cursor-pointer text-sm text-gray-600"
                 >
                   Remember me
                 </label>
+
               </div>
 
-              {/* Submit */}
+              {/* Submit Button */}
+
               <button
                 type="submit"
                 disabled={loading}
-                className="
-                  flex
-                  h-12
-                  w-full
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-lg
-                  bg-blue-600
-                  px-5
-                  text-sm
-                  font-semibold
-                  text-white
-                  shadow-sm
-                  transition
-                  duration-200
-                  hover:bg-blue-700
-                  hover:shadow-md
-                  focus:outline-none
-                  focus:ring-4
-                  focus:ring-blue-100
-                  disabled:cursor-not-allowed
-                  disabled:opacity-60
-                "
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-md shadow-blue-600/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/25 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
+
                 {loading ? (
                   "Signing in..."
                 ) : (
@@ -409,39 +437,111 @@ const Login = () => {
                     <ArrowRight size={18} />
                   </>
                 )}
+
               </button>
+
             </form>
 
-            {/* Register */}
+            {/* =================================
+                GOOGLE LOGIN SECTION
+            ================================= */}
+
+            <div className="mt-7">
+
+              {/* OR DIVIDER */}
+
+              <div className="mb-6 flex items-center gap-4">
+
+                <div className="h-px flex-1 bg-gray-200" />
+
+                <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+                  Or continue with
+                </span>
+
+                <div className="h-px flex-1 bg-gray-200" />
+
+              </div>
+
+              {/* GOOGLE BUTTON CARD */}
+
+              <div className="group relative flex w-full items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-white p-3 shadow-sm transition-all duration-300 hover:border-blue-300 hover:shadow-md">
+
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-50/0 via-blue-50/50 to-blue-50/0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                <div className="relative z-10 flex w-full justify-center">
+
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    theme="outline"
+                    size="large"
+                    shape="rectangular"
+                    text="continue_with"
+                    width="350"
+                    logo_alignment="center"
+                  />
+
+                </div>
+
+              </div>
+
+              {/* Security Text */}
+
+              <div className="mt-4 flex items-center justify-center gap-2">
+
+                <ShieldCheck
+                  size={15}
+                  className="text-green-500"
+                />
+
+                <p className="text-xs text-gray-400">
+                  Securely access your PlacementHub account
+                </p>
+
+              </div>
+
+            </div>
+
+            {/* REGISTER LINK */}
+
             <div className="mt-8 text-center">
+
               <p className="text-sm text-gray-500">
+
                 Don't have an account?{" "}
+
                 <Link
                   to="/register"
-                  className="font-semibold text-blue-600 hover:text-blue-700"
+                  className="font-semibold text-blue-600 transition hover:text-blue-800"
                 >
                   Create an account
                 </Link>
+
               </p>
+
             </div>
 
-            {/* Demo Admin */}
-            <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <p className="text-xs font-semibold text-gray-700">
+            {/* DEMO ADMIN */}
+
+            <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-4">
+
+              <p className="text-xs font-bold text-gray-700">
                 Development Admin
               </p>
 
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-gray-500">
                 admin@collegeplacement.com
               </p>
 
-              <p className="text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500">
                 Password: Admin@123
               </p>
+
             </div>
 
           </div>
         </div>
+
       </div>
     </div>
   );

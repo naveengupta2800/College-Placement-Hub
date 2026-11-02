@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import api from "../services/api";
 
@@ -18,9 +19,18 @@ export const AuthProvider = ({ children }) => {
       if (response.data.success) {
         setUser(response.data.user);
       }
+
+      return response.data;
     } catch (error) {
       localStorage.removeItem("token");
       setUser(null);
+
+      throw (
+        error.response?.data || {
+          success: false,
+          message: "Unable to fetch user",
+        }
+      );
     } finally {
       setLoading(false);
     }
@@ -34,14 +44,14 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem("token");
 
     if (token) {
-      getMe();
+      getMe().catch(() => {});
     } else {
       setLoading(false);
     }
   }, []);
 
   // =====================================
-  // LOGIN
+  // EMAIL PASSWORD LOGIN
   // =====================================
 
   const login = async (email, password) => {
@@ -52,11 +62,7 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (response.data.success) {
-        localStorage.setItem(
-          "token",
-          response.data.token
-        );
-
+        localStorage.setItem("token", response.data.token);
         setUser(response.data.user);
       }
 
@@ -66,6 +72,32 @@ export const AuthProvider = ({ children }) => {
         error.response?.data || {
           success: false,
           message: "Login failed",
+        }
+      );
+    }
+  };
+
+  // =====================================
+  // GOOGLE LOGIN
+  // =====================================
+
+  const googleLogin = async (credential) => {
+    try {
+      const response = await api.post("/auth/google", {
+        credential,
+      });
+
+      if (response.data.success) {
+        localStorage.setItem("token", response.data.token);
+        setUser(response.data.user);
+      }
+
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          success: false,
+          message: "Google login failed",
         }
       );
     }
@@ -88,6 +120,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     login,
+    googleLogin,
     logout,
     getMe,
   };

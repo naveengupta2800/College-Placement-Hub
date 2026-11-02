@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
@@ -16,10 +17,18 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Password is optional for Google-authenticated users
     password: {
       type: String,
-      required: true,
       minlength: 6,
+      default: undefined,
+    },
+
+    // Google account ID
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
 
     role: {

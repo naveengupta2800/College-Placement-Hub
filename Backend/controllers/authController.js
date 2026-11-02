@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const generateToken = require("../utils/generateToken");
 const sendEmail = require("../utils/sendEmail");
+const { OAuth2Client } = require("google-auth-library");
 
 // =====================================
 // REGISTER
@@ -236,6 +237,133 @@ const login = async (req, res) => {
 };
 
 // =====================================
+// GOOGLE LOGIN
+// =====================================
+
+const googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({
+        success: false,
+        message: "Google credential is required",
+      });
+    }
+
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return res.status(500).json({
+        success: false,
+        message: "Google authentication is not configured",
+      });
+    }
+
+    // Verify Google ID token
+    const client = new OAuth2Client(
+      process.env.GOOGLE_CLIENT_ID
+    );
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const {
+      sub: googleId,
+      email,
+      name,
+      picture,
+      email_verified,
+    } = payload;
+
+    // Verify email
+    if (!email || !email_verified || !googleId) {
+      return res.status(401).json({
+        success: false,
+        message: "Google email verification failed",
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Find existing user
+    let user = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (user) {
+
+      // Check account status
+      if (!user.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: "Account is inactive",
+        });
+      }
+
+      // Prevent linking a different Google account
+      if (user.googleId && user.googleId !== googleId) {
+        return res.status(409).json({
+          success: false,
+          message: "Another Google account is linked to this email",
+        });
+      }
+
+      // Link Google account with existing account
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.save();
+      }
+
+    } else {
+
+      // Create new student account
+      user = await User.create({
+        name: name || normalizedEmail.split("@")[0],
+        email: normalizedEmail,
+        googleId,
+        password: undefined,
+        role: "student",
+        profileImage: picture || "",
+        isActive: true,
+      });
+
+    }
+
+    // Generate existing JWT
+    const token = generateToken(
+      user._id,
+      user.role
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Google login successful",
+
+      token,
+
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        profileImage: user.profileImage,
+      },
+    });
+
+  } catch (error) {
+    console.error("Google Login Error:", error);
+
+    return res.status(401).json({
+      success: false,
+      message: "Google authentication failed",
+    });
+  }
+};
+// =====================================
 // GET CURRENT USER
 // =====================================
 
@@ -343,6 +471,7 @@ const testEmail = async (
 module.exports = {
   register,
   login,
+  googleLogin,
   getMe,
   testEmail,
 };
